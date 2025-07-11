@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Pisahkan PDF per Halaman</title>
+    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            text-align: center;
+        }
+        input, button {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>PDF Splitter Online</h1>
+    <p>Pisahkan setiap halaman dari file PDF menjadi file terpisah</p>
+    <input type="file" id="pdfFile" accept="application/pdf"><br>
+    <button onclick="splitPDF()">Pisahkan PDF</button>
+    <p id="status"></p>
+
+    <script>
+        async function splitPDF() {
+            const input = document.getElementById('pdfFile');
+            const status = document.getElementById('status');
+            if (!input.files[0]) {
+                alert("Silakan unggah file PDF terlebih dahulu.");
+                return;
+            }
+
+            status.textContent = "Memproses...";
+            const file = input.files[0];
+            const arrayBuffer = await file.arrayBuffer();
+            const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+            const totalPages = pdfDoc.getPageCount();
+
+            const zip = new JSZip();
+
+            for (let i = 0; i < totalPages; i++) {
+                const newPdf = await PDFLib.PDFDocument.create();
+                const [copiedPage] = await newPdf.copyPages(pdfDoc, [i]);
+                newPdf.addPage(copiedPage);
+
+                const pdfBytes = await newPdf.save();
+                zip.file(`halaman_${i + 1}.pdf`, pdfBytes);
+            }
+
+            zip.generateAsync({ type: "blob" }).then(function (content) {
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(content);
+                a.download = "pdf_per_halaman.zip";
+                a.click();
+                status.textContent = "Berhasil dipisah dan diunduh!";
+            });
+        }
+    </script>
+</body>
+</html>
